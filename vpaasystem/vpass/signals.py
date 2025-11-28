@@ -1,17 +1,5 @@
-from django.db.models.signals import post_save, post_migrate
+from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from .models import UserProfile
-
-
-
-
-@receiver(post_migrate)
-def create_profiles_for_existing_users(sender, **kwargs):
-    """Create profiles for all existing users that don't have one."""
-    User = get_user_model()
-    for user in User.objects.filter(profile__isnull=True):
-        UserProfile.objects.create(user=user, role='STUDENT')
 
 
 def try_generate_certificate(attendance):

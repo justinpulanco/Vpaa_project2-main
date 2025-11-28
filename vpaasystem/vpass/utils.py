@@ -42,13 +42,15 @@ def generate_certificate_image(attendance, template_text=None):
     
     name_text = getattr(attendance.attendee, 'full_name', str(attendance.attendee))
    
-    w, h = draw.textsize(name_text, font=name_font)
+    bbox = draw.textbbox((0, 0), name_text, font=name_font)
+    w = bbox[2] - bbox[0]
     draw.text(((width - w) / 2, 250), name_text, font=name_font, fill=(0, 0, 128))
 
     
     ev_title = getattr(attendance.event, 'title', str(attendance.event))
     ev_text = f"has attended the event: {ev_title}"
-    w2, _ = draw.textsize(ev_text, font=body_font)
+    bbox2 = draw.textbbox((0, 0), ev_text, font=body_font)
+    w2 = bbox2[2] - bbox2[0]
     draw.text(((width - w2) / 2, 350), ev_text, font=body_font, fill=(0, 0, 0))
 
     date_text = ''
@@ -58,7 +60,9 @@ def generate_certificate_image(attendance, template_text=None):
         date_text = ''
 
     if date_text:
-        draw.text(((width - draw.textsize(date_text, font=body_font)[0]) / 2, 400), date_text, font=body_font)
+        bbox_date = draw.textbbox((0, 0), date_text, font=body_font)
+        w_date = bbox_date[2] - bbox_date[0]
+        draw.text(((width - w_date) / 2, 400), date_text, font=body_font)
 
     
     if template_text:

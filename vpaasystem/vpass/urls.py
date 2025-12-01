@@ -1,3 +1,4 @@
+from . import views
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import EventViewSet, AttendanceViewSet, SurveyViewSet, SurveyResponseViewSet
@@ -10,4 +11,5 @@ router.register(r'survey-responses', SurveyResponseViewSet, basename='surveyresp
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('auth/register/', views.RegisterView.as_view(), name='register'),
 ]

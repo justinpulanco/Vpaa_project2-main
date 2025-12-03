@@ -18,6 +18,8 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='STUDENT')
+    email_verified = models.BooleanField(default=False)
+    verification_token = models.CharField(max_length=100, blank=True, null=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
@@ -44,11 +46,37 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 class Event(models.Model):
+    CATEGORY_CHOICES = [
+        ('SEMINAR', 'Seminar'),
+        ('WORKSHOP', 'Workshop'),
+        ('CONFERENCE', 'Conference'),
+        ('TRAINING', 'Training'),
+        ('MEETING', 'Meeting'),
+        ('OTHER', 'Other'),
+    ]
+    
+    RECURRENCE_CHOICES = [
+        ('NONE', 'No Recurrence'),
+        ('DAILY', 'Daily'),
+        ('WEEKLY', 'Weekly'),
+        ('MONTHLY', 'Monthly'),
+    ]
+    
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_events')
+    qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
+    max_capacity = models.IntegerField(default=0, help_text="0 means unlimited")
+    certificate_template = models.CharField(max_length=50, default='default', choices=[
+        ('default', 'Default Template'),
+        ('modern', 'Modern Template'),
+        ('classic', 'Classic Template')
+    ])
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='OTHER')
+    recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='NONE')
+    recurrence_end_date = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         permissions = [
@@ -59,6 +87,36 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+    @property
+    def status(self):
+        now = timezone.now()
+        if now < self.start:
+            return 'upcoming'
+        elif now > self.end:
+            return 'completed'
+        return 'ongoing'
+    
+    @property
+    def attendee_count(self):
+        return self.attendances.filter(present=True).count()
+    
+    def generate_qr_code(self):
+        import qrcode
+        from io import BytesIO
+        from django.core.files import File
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(f"Event ID: {self.id} - {self.title}")
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        
+        filename = f'qr_event_{self.id}.png'
+        self.qr_code.save(filename, File(buffer), save=False)
+        buffer.close()
 
 
 class Attendee(models.Model):
@@ -76,6 +134,7 @@ class Attendance(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='attendances')
     attendee = models.ForeignKey(Attendee, on_delete=models.CASCADE, related_name='attendances')
     timestamp = models.DateTimeField(default=timezone.now)
+    time_out = models.DateTimeField(null=True, blank=True)
     present = models.BooleanField(default=False)
     certificate = models.FileField(upload_to='certificates/', null=True, blank=True)
 
@@ -176,18 +235,16 @@ class Attendance(models.Model):
         c.drawString(300, -200, "VPAA SYSTEM")
         c.restoreState()
         
-        # Add date
-        c.setFont('Helvetica', 12)
-        c.drawCentredString(width/2, 120, f"Date: {self.event.start.strftime('%B %d, %Y')}")
-        c.line(width/2 - 100, 100, width/2 + 100, 100)
-        c.drawCentredString(width/2, 80, "Authorized Signature")
-        
         c.save()
+        
+        # Rewind buffer to beginning
+        buffer.seek(0)
         
         # Save the PDF to the certificate field
         filename = f"certificate_{self.attendee.id}_{self.event.id}.pdf"
-        self.certificate.save(filename, buffer, save=True)
+        self.certificate.save(filename, ContentFile(buffer.read()), save=False)
         self.save()
+        buffer.close()
         
         return True
 

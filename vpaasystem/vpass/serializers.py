@@ -1,8 +1,16 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Event, Attendee, Attendance, Survey, SurveyResponse
+from .models import Event, Attendee, Attendance, Survey, SurveyResponse, UserProfile
 
 User = get_user_model()
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'user', 'username', 'email', 'role']
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -23,9 +31,18 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class EventSerializer(serializers.ModelSerializer):
+    status = serializers.ReadOnlyField()
+    attendee_count = serializers.ReadOnlyField()
+    
     class Meta:
         model = Event
         fields = '__all__'
+    
+    def validate(self, data):
+        if 'start' in data and 'end' in data:
+            if data['end'] <= data['start']:
+                raise serializers.ValidationError("End time must be after start time")
+        return data
 
 
 class AttendeeSerializer(serializers.ModelSerializer):

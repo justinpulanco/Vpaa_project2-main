@@ -1,26 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import EventQRCode from './EventQRCode';
+import SurveyBuilder from './SurveyBuilder';
+import SurveyResults from './SurveyResults';
+import API_BASE_URL from '../config';
 
 export default function EventDetailsModal({ event, onClose }) {
   const [attendances, setAttendances] = useState([]);
+  const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
+  const [showSurveyBuilder, setShowSurveyBuilder] = useState(false);
+  const [showSurveyResults, setShowSurveyResults] = useState(false);
+  const [selectedSurveyId, setSelectedSurveyId] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'attendees') {
       fetchAttendances();
+    } else if (activeTab === 'surveys') {
+      fetchSurveys();
     }
   }, [activeTab, event.id]);
 
   const fetchAttendances = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/events/${event.id}/attendees/`);
+      const response = await fetch(`${API_BASE_URL}/api/events/${event.id}/attendees/`);
       const data = await response.json();
       setAttendances(data);
     } catch (err) {
       console.error('Failed to fetch attendances:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSurveys = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/surveys/by_event/?event_id=${event.id}`);
+      const data = await response.json();
+      setSurveys(data);
+    } catch (err) {
+      console.error('Failed to fetch surveys:', err);
     }
   };
 
@@ -54,6 +73,12 @@ export default function EventDetailsModal({ event, onClose }) {
             style={activeTab === 'qr' ? styles.activeTab : styles.tab}
           >
             📱 QR Code
+          </button>
+          <button 
+            onClick={() => setActiveTab('surveys')} 
+            style={activeTab === 'surveys' ? styles.activeTab : styles.tab}
+          >
+            📝 Surveys
           </button>
           <button 
             onClick={() => setActiveTab('attendees')} 
@@ -128,6 +153,57 @@ export default function EventDetailsModal({ event, onClose }) {
             <EventQRCode eventId={event.id} />
           )}
 
+          {activeTab === 'surveys' && (
+            <div>
+              <div style={styles.surveyHeader}>
+                <h3 style={styles.sectionTitle}>Event Surveys</h3>
+                <button 
+                  onClick={() => setShowSurveyBuilder(true)}
+                  style={styles.createSurveyBtn}
+                >
+                  ➕ Create Survey
+                </button>
+              </div>
+
+              {surveys.length > 0 ? (
+                <div style={styles.surveyList}>
+                  {surveys.map((survey) => (
+                    <div key={survey.id} style={styles.surveyCard}>
+                      <div style={styles.surveyInfo}>
+                        <h4 style={styles.surveyTitle}>{survey.title}</h4>
+                        <p style={styles.surveyMeta}>
+                          {survey.questions?.length || 0} questions • 
+                          {survey.is_active ? ' Active' : ' Inactive'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedSurveyId(survey.id);
+                          setShowSurveyResults(true);
+                        }}
+                        style={styles.viewResultsBtn}
+                      >
+                        📊 View Results
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={styles.emptyState}>
+                  <div style={styles.emptyIcon}>📝</div>
+                  <h3>No surveys yet</h3>
+                  <p>Create a survey to collect feedback from attendees</p>
+                  <button 
+                    onClick={() => setShowSurveyBuilder(true)}
+                    style={styles.createSurveyBtn}
+                  >
+                    ➕ Create Survey
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'attendees' && (
             <div>
               {loading ? (
@@ -163,6 +239,29 @@ export default function EventDetailsModal({ event, onClose }) {
           )}
         </div>
       </div>
+
+      {/* Survey Builder Modal */}
+      {showSurveyBuilder && (
+        <SurveyBuilder
+          eventId={event.id}
+          onClose={() => setShowSurveyBuilder(false)}
+          onSuccess={() => {
+            fetchSurveys();
+            setShowSurveyBuilder(false);
+          }}
+        />
+      )}
+
+      {/* Survey Results Modal */}
+      {showSurveyResults && selectedSurveyId && (
+        <SurveyResults
+          surveyId={selectedSurveyId}
+          onClose={() => {
+            setShowSurveyResults(false);
+            setSelectedSurveyId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -316,5 +415,65 @@ const styles = {
     padding: '40px',
     color: '#95a5a6',
     fontSize: '14px'
-  }
+  },
+  surveyHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: '18px',
+    color: '#2c3e50',
+    fontWeight: '600'
+  },
+  createSurveyBtn: {
+    padding: '10px 20px',
+    backgroundColor: '#27ae60',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer'
+  },
+  surveyList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+  },
+  surveyCard: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    border: '1px solid #e8e8e8'
+  },
+  surveyInfo: {
+    flex: 1
+  },
+  surveyTitle: {
+    margin: '0 0 8px 0',
+    fontSize: '16px',
+    color: '#2c3e50',
+    fontWeight: '600'
+  },
+  surveyMeta: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#7f8c8d'
+  },
+  viewResultsBtn: {
+    padding: '10px 20px',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer'
+  },
 };

@@ -23,11 +23,11 @@ export default function User() {
   }, []);
 
   useEffect(() => {
-    if (attendance) {
+    if (attendance && selectedEvent) {
       checkCompletion();
       fetchSurveys();
     }
-  }, [attendance]);
+  }, [attendance, selectedEvent]);
 
   const fetchEvents = async () => {
     try {
@@ -44,8 +44,10 @@ export default function User() {
   const fetchSurveys = async () => {
     if (!selectedEvent) return;
     try {
+      console.log('Fetching surveys for event:', selectedEvent.id);
       const response = await fetch(`http://localhost:8000/api/surveys/by_event/?event_id=${selectedEvent.id}`);
       const data = await response.json();
+      console.log('Surveys fetched:', data);
       setSurveys(data);
     } catch (err) {
       console.error('Failed to fetch surveys:', err);
@@ -166,15 +168,23 @@ export default function User() {
               )}
 
               {completionStatus?.time_out && !completionStatus?.survey_completed && (
-                surveys.length > 0 ? (
-                  <SurveyForm
-                    survey={surveys[0]}
-                    attendanceId={attendance.id}
-                    onComplete={checkCompletion}
-                  />
+                completionStatus?.event_has_survey ? (
+                  surveys.length > 0 ? (
+                    <SurveyForm
+                      survey={surveys[0]}
+                      attendanceId={attendance.id}
+                      onComplete={checkCompletion}
+                    />
+                  ) : (
+                    <div style={{ backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', marginTop: '20px', textAlign: 'center' }}>
+                      <h4>Step 3: Survey</h4>
+                      <p>⏳ Loading survey...</p>
+                    </div>
+                  )
                 ) : (
-                  <div style={{ backgroundColor: '#d4edda', padding: '15px', borderRadius: '8px', marginTop: '20px', textAlign: 'center' }}>
-                    <p>✅ No survey required for this event. Your certificate is ready!</p>
+                  <div style={{ backgroundColor: '#d4edda', padding: '20px', borderRadius: '8px', marginTop: '20px', textAlign: 'center' }}>
+                    <h4>✅ All Tasks Complete!</h4>
+                    <p>No survey required for this event. Generating your certificate...</p>
                   </div>
                 )
               )}

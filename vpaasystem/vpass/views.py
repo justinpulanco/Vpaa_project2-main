@@ -335,19 +335,31 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         attendance = self.get_object()
         has_survey = SurveyResponse.objects.filter(attendance=attendance).exists()
         
-        completed = attendance.present and has_survey
+        # Check if event has surveys
+        event_has_surveys = Survey.objects.filter(event=attendance.event, is_active=True).exists()
         
-        # Auto-generate certificate if all tasks completed
-        if completed:
+        # All 3 tasks must be completed:
+        # 1. Time In (present = True)
+        # 2. Time Out (time_out is not None)
+        # 3. Survey (if event has survey, must be completed)
+        time_in_done = attendance.present
+        time_out_done = bool(attendance.time_out)
+        survey_done = has_survey if event_has_surveys else True  # If no survey, consider it done
+        
+        all_tasks_completed = time_in_done and time_out_done and survey_done
+        
+        # ONLY generate certificate if ALL 3 tasks are completed
+        if all_tasks_completed:
             if not attendance.certificate or attendance.certificate.size < 1000:
                 attendance.generate_certificate()
         
         return Response({
-            'time_in': attendance.present,
-            'time_out': bool(attendance.time_out),
-            'survey_completed': has_survey,
-            'all_completed': completed and bool(attendance.time_out),
-            'certificate_ready': bool(attendance.certificate and attendance.certificate.size > 1000) and bool(attendance.time_out)
+            'time_in': time_in_done,
+            'time_out': time_out_done,
+            'survey_completed': survey_done,
+            'event_has_survey': event_has_surveys,
+            'all_completed': all_tasks_completed,
+            'certificate_ready': bool(attendance.certificate and attendance.certificate.size > 1000) and all_tasks_completed
         })
         
     @action(detail=True, methods=['post'])
@@ -365,6 +377,9 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         
     @action(detail=True, methods=['get'])
     def download_certificate(self, request, pk=None):
+        import os
+        from django.conf import settings
+        
         attendance = self.get_object()
         
         # If no certificate or file is too small (corrupted), regenerate
@@ -376,19 +391,37 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         
         if not attendance.certificate:
             return Response({'detail': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-        response = FileResponse(attendance.certificate)
-        filename = f"certificate_{attendance.attendee.full_name.replace(' ', '_')}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+        
+        # Get the full file path
+        certificate_path = attendance.certificate.path
+        
+        # Check if file exists
+        if not os.path.exists(certificate_path):
+            return Response({'detail': 'Certificate file not found on server'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Open the file and create response
+        try:
+            certificate_file = open(certificate_path, 'rb')
+            response = FileResponse(certificate_file, content_type='application/pdf')
+            filename = f"certificate_{attendance.attendee.full_name.replace(' ', '_')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except Exception as e:
+            return Response({'detail': f'Error opening certificate: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['post'])
     def email_certificate(self, request, pk=None):
+        import os
         from django.core.mail import EmailMessage
         
         attendance = self.get_object()
         if not attendance.certificate:
             return Response({'detail': 'Certificate not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if file exists
+        certificate_path = attendance.certificate.path
+        if not os.path.exists(certificate_path):
+            return Response({'detail': 'Certificate file not found on server'}, status=status.HTTP_404_NOT_FOUND)
         
         try:
             email = EmailMessage(
@@ -397,8 +430,11 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 from_email='noreply@hcdc.edu.ph',
                 to=[attendance.attendee.email]
             )
-            attendance.certificate.open()
-            email.attach(f'certificate.pdf', attendance.certificate.read(), 'application/pdf')
+            
+            # Read the certificate file
+            with open(certificate_path, 'rb') as cert_file:
+                email.attach(f'certificate.pdf', cert_file.read(), 'application/pdf')
+            
             email.send(fail_silently=False)
             return Response({
                 'detail': f'Certificate sent to {attendance.attendee.email}! Please check your inbox.',

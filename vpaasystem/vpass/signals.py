@@ -27,19 +27,11 @@ def try_generate_certificate(attendance):
         has_survey = False
 
     if has_present and has_survey and not getattr(attendance, 'certificate', None):
-        
-        from .utils import generate_certificate_image
+        # Use the PDF generator from the model instead of PNG
         try:
-            content = generate_certificate_image(attendance)
-            
-            try:
-                attendance.certificate.save(content.name, content)
-                attendance.save()
-            except Exception:
-                
-                setattr(attendance, '_generated_certificate_content', content)
+            attendance.generate_certificate()
         except Exception:
-           
+            # If PDF generation fails, silently pass
             pass
 
 

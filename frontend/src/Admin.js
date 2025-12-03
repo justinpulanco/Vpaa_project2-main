@@ -49,7 +49,11 @@ export default function Admin() {
       const eventData = {
         ...formData,
         start: new Date(formData.start).toISOString(),
-        end: new Date(formData.end).toISOString()
+        end: new Date(formData.end).toISOString(),
+        // Convert recurrence_end_date if it exists and is not empty
+        recurrence_end_date: formData.recurrence_end_date 
+          ? new Date(formData.recurrence_end_date).toISOString() 
+          : null
       };
       
       const response = await fetch(url, {

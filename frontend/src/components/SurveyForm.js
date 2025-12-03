@@ -43,11 +43,16 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
 
   return (
     <div style={styles.container}>
-      <h3>{survey.title}</h3>
+      <div style={styles.header}>
+        <h3 style={styles.title}>📝 {survey.title}</h3>
+        <p style={styles.subtitle}>Please answer all questions to complete the event</p>
+      </div>
       <form onSubmit={handleSubmit} style={styles.form}>
         {survey.questions.map((q, idx) => (
           <div key={idx} style={styles.question}>
-            <label>{q.question}</label>
+            <label style={styles.label}>
+              <span style={styles.questionNumber}>Q{idx + 1}.</span> {q.question}
+            </label>
             {q.type === 'text' && (
               <input
                 type="text"
@@ -66,6 +71,17 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             )}
+            {q.type === 'yesno' && (
+              <select
+                onChange={(e) => setAnswers({...answers, [idx]: e.target.value})}
+                required
+                style={styles.select}
+              >
+                <option value="">Select answer</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            )}
           </div>
         ))}
         <button type="submit" disabled={loading} style={styles.button}>
@@ -77,12 +93,82 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
 };
 
 const styles = {
-  container: { backgroundColor: '#fff', padding: '20px', borderRadius: '8px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  question: { display: 'flex', flexDirection: 'column', gap: '5px' },
-  input: { padding: '10px', border: '1px solid #ddd', borderRadius: '4px' },
-  select: { padding: '10px', border: '1px solid #ddd', borderRadius: '4px' },
-  button: { padding: '12px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+  container: { 
+    backgroundColor: '#fff', 
+    padding: '25px', 
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    marginTop: '20px'
+  },
+  header: {
+    marginBottom: '25px',
+    paddingBottom: '15px',
+    borderBottom: '2px solid #e8e8e8'
+  },
+  title: {
+    margin: '0 0 8px 0',
+    fontSize: '20px',
+    color: '#2c3e50',
+    fontWeight: '600'
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#7f8c8d'
+  },
+  form: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '20px' 
+  },
+  question: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '10px',
+    padding: '15px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    border: '1px solid #e8e8e8'
+  },
+  label: {
+    fontSize: '15px',
+    fontWeight: '500',
+    color: '#34495e'
+  },
+  questionNumber: {
+    color: '#c8102e',
+    fontWeight: '700',
+    marginRight: '5px'
+  },
+  input: { 
+    padding: '12px', 
+    border: '2px solid #e8e8e8', 
+    borderRadius: '6px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.3s'
+  },
+  select: { 
+    padding: '12px', 
+    border: '2px solid #e8e8e8', 
+    borderRadius: '6px',
+    fontSize: '14px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    outline: 'none'
+  },
+  button: { 
+    padding: '14px', 
+    backgroundColor: '#27ae60', 
+    color: 'white', 
+    border: 'none', 
+    borderRadius: '8px', 
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: '600',
+    marginTop: '10px',
+    transition: 'background-color 0.3s'
+  }
 };
 
 export default SurveyForm;

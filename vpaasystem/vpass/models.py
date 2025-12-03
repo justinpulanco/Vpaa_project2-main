@@ -175,51 +175,77 @@ class Attendance(models.Model):
         c.setFillColorRGB(0.9, 0.95, 1.0)
         c.circle(width/2, height/2, 300, fill=1, stroke=0)
         
+        # Add school name at top
+        c.setFont('Helvetica-Bold', 16)
+        c.setFillColorRGB(0.6, 0.0, 0.15)  # HCDC maroon color
+        c.drawCentredString(width/2, height-70, "HOLY CROSS OF DAVAO COLLEGE")
+        c.setFont('Helvetica', 11)
+        c.setFillColorRGB(0.4, 0.4, 0.4)
+        c.drawCentredString(width/2, height-88, "Vice President for Academic Affairs")
+        
         # Add title with shadow effect
         c.setFont('Helvetica-Bold', 36)
         c.setFillColorRGB(0.2, 0.4, 0.7)
-        c.drawCentredString(width/2 + 2, height-120 + 2, "CERTIFICATE")
+        c.drawCentredString(width/2 + 2, height-140 + 2, "CERTIFICATE")
         c.setFillColorRGB(0.1, 0.2, 0.5)
-        c.drawCentredString(width/2, height-120, "CERTIFICATE")
+        c.drawCentredString(width/2, height-140, "CERTIFICATE")
         
         # Add subtitle
         c.setFont('Helvetica', 14)
         c.setFillColorRGB(0.3, 0.3, 0.3)
-        c.drawCentredString(width/2, height-160, "OF ACHIEVEMENT")
+        c.drawCentredString(width/2, height-180, "OF ACHIEVEMENT")
         
         # Add decorative line
         c.setStrokeColorRGB(0.2, 0.4, 0.7)
         c.setLineWidth(2)
-        c.line(width/2 - 100, height-180, width/2 + 100, height-180)
+        c.line(width/2 - 100, height-200, width/2 + 100, height-200)
         
         # Add main content
         c.setFont('Helvetica', 16)
         c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.drawCentredString(width/2, height-240, "This is to certify that")
+        c.drawCentredString(width/2, height-260, "This is to certify that")
         
         # Add name with highlight
         c.setFont('Helvetica-Bold', 24)
         c.setFillColorRGB(0.1, 0.3, 0.6)
-        c.drawCentredString(width/2, height-290, self.attendee.full_name.upper())
+        c.drawCentredString(width/2, height-310, self.attendee.full_name.upper())
         
         # Add event details
         c.setFont('Helvetica', 14)
         c.setFillColorRGB(0.2, 0.2, 0.2)
-        c.drawCentredString(width/2, height-340, "has successfully attended the event:")
+        c.drawCentredString(width/2, height-360, "has successfully attended the event:")
         c.setFont('Helvetica-Bold', 18)
         c.setFillColorRGB(0.1, 0.3, 0.6)
-        c.drawCentredString(width/2, height-380, f'"{self.event.title}"')
+        c.drawCentredString(width/2, height-400, f'"{self.event.title}"')
+        
+        # Add inspirational message
+        c.setFont('Helvetica-Oblique', 11)
+        c.setFillColorRGB(0.3, 0.3, 0.3)
+        message_lines = [
+            "Your participation and dedication to learning inspire us all.",
+            "May the knowledge you've gained today empower you to reach new heights",
+            "and make a positive impact in your community and beyond.",
+            "Continue to pursue excellence in all your endeavors!"
+        ]
+        y_position = height - 450
+        for line in message_lines:
+            c.drawCentredString(width/2, y_position, line)
+            y_position -= 18
         
         # Add date
         c.setFont('Helvetica-Oblique', 12)
         c.setFillColorRGB(0.3, 0.3, 0.3)
-        c.drawCentredString(width/2, 180, f"Date: {self.event.start.strftime('%B %d, %Y')}")
+        c.drawCentredString(width/2, 220, f"Date: {self.event.start.strftime('%B %d, %Y')}")
         
         # Add signature line
         c.setLineWidth(1)
-        c.line(width/2 - 100, 120, width/2 + 100, 120)
-        c.setFont('Helvetica', 12)
-        c.drawCentredString(width/2, 90, "Authorized Signature")
+        c.line(width/2 - 100, 160, width/2 + 100, 160)
+        c.setFont('Helvetica', 11)
+        c.drawCentredString(width/2, 140, "Authorized Signature")
+        c.setFont('Helvetica-Bold', 10)
+        c.drawCentredString(width/2, 125, "Holy Cross of Davao College")
+        c.setFont('Helvetica', 9)
+        c.drawCentredString(width/2, 112, "Vice President for Academic Affairs")
         
         # Add footer
         c.setFont('Helvetica', 8)

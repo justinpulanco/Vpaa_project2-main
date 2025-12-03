@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config';
+import ForgotPassword from './ForgotPassword';
 
 const AuthPage = ({ onLogin }) => {
   const [isSignIn, setIsSignIn] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,8 +33,8 @@ const AuthPage = ({ onLogin }) => {
 
     try {
       const url = isSignIn
-        ? 'http://localhost:8000/api/auth/login/'
-        : 'http://localhost:8000/api/auth/register/';
+        ? `${API_BASE_URL}/api/auth/login/`
+        : `${API_BASE_URL}/api/auth/register/`;
 
       const requestBody = isSignIn
         ? { email, password, stay_signed_in: staySignedIn }
@@ -50,8 +53,14 @@ const AuthPage = ({ onLogin }) => {
       }
 
       if (data.token) {
+        // Store tokens and user data
         localStorage.setItem('token', data.token);
-        onLogin({ email, password });
+        localStorage.setItem('refresh', data.refresh);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Navigate to dashboard
+        navigate('/dashboard');
+        window.location.reload(); // Refresh to update auth state
       } else {
         throw new Error('No token received');
       }
@@ -79,6 +88,10 @@ const AuthPage = ({ onLogin }) => {
     submitButton: { backgroundColor: '#c8102e', color: 'white', padding: '13px', border: 'none', borderRadius: '4px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', marginTop: '12px', textTransform: 'uppercase', letterSpacing: '1px', boxShadow: '0 2px 4px rgba(200,16,46,0.3)' },
 
   };
+
+  if (showForgotPassword) {
+    return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div style={styles.container}>
@@ -128,10 +141,21 @@ const AuthPage = ({ onLogin }) => {
             </div>
           )}
           {isSignIn && (
-            <div style={styles.rememberMe}>
-              <input type="checkbox" id="staySignedIn" checked={staySignedIn} onChange={() => setStaySignedIn(!staySignedIn)} style={styles.checkbox} />
-              <label htmlFor="staySignedIn" style={styles.rememberMeLabel}>Stay Signed in</label>
-            </div>
+            <>
+              <div style={styles.rememberMe}>
+                <input type="checkbox" id="staySignedIn" checked={staySignedIn} onChange={() => setStaySignedIn(!staySignedIn)} style={styles.checkbox} />
+                <label htmlFor="staySignedIn" style={styles.rememberMeLabel}>Stay Signed in</label>
+              </div>
+              <div style={{ textAlign: 'right', marginTop: '5px' }}>
+                <button 
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  style={{ background: 'none', border: 'none', color: '#3498db', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            </>
           )}
           <button type="submit" style={{ ...styles.submitButton, opacity: isLoading ? 0.7 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }} disabled={isLoading}>
             {isLoading ? 'Processing...' : (isSignIn ? 'SIGN IN' : 'SIGN UP')}

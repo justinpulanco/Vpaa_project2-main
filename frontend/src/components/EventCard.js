@@ -92,7 +92,6 @@ const EventCard = ({ event, onSelect, showActions = false, onEdit, onDelete, onE
         {showActions && (
           <div style={styles.actions}>
             <button onClick={() => onEdit(event)} style={styles.editBtn}>✏️ Edit</button>
-            {onExport && <button onClick={() => onExport(event.id)} style={styles.exportBtn}>📊 Export</button>}
             <button onClick={() => onDelete(event.id)} style={styles.deleteBtn}>🗑️ Delete</button>
           </div>
         )}

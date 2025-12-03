@@ -61,6 +61,7 @@ export default function QRScanner({ onScan }) {
     <div style={styles.container}>
       <div style={styles.card}>
         <h3 style={styles.title}>📱 QR Code Check-in</h3>
+        
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
             <label style={styles.label}>QR Code Data</label>
@@ -68,7 +69,7 @@ export default function QRScanner({ onScan }) {
               type="text"
               value={qrData}
               onChange={(e) => setQrData(e.target.value)}
-              placeholder="Scan or paste QR code data"
+              placeholder="Type or paste: Event ID: X - Event Name"
               style={styles.input}
               required
             />

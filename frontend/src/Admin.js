@@ -151,7 +151,6 @@ export default function Admin() {
                 showActions={true}
                 onEdit={(e) => { setEditingEvent(e); setShowForm(true); }}
                 onDelete={handleDelete}
-                onExport={(id) => window.open(`http://localhost:8000/api/events/${id}/export_attendance/`, '_blank')}
                 onSelect={(e) => setSelectedEventDetails(e)}
               />
             </div>

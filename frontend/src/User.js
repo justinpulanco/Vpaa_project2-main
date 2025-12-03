@@ -6,6 +6,7 @@ import ProgressBar from "./components/ProgressBar";
 import CertificateActions from "./components/CertificateActions";
 import QRScanner from "./components/QRScanner";
 import UserProfileCard from "./components/UserProfileCard";
+import MyCertificates from "./components/MyCertificates";
 
 export default function User() {
   const [events, setEvents] = useState([]);
@@ -15,6 +16,7 @@ export default function User() {
   const [completionStatus, setCompletionStatus] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [activeTab, setActiveTab] = useState('events'); // 'events' or 'certificates'
 
   useEffect(() => {
     fetchEvents();
@@ -98,11 +100,29 @@ export default function User() {
         </button>
       </div>
 
-      {showQRScanner && (
+      {/* Tabs */}
+      <div style={styles.tabs}>
+        <button 
+          onClick={() => { setActiveTab('events'); setSelectedEvent(null); setAttendance(null); }}
+          style={activeTab === 'events' ? styles.activeTab : styles.tab}
+        >
+          📅 Events
+        </button>
+        <button 
+          onClick={() => setActiveTab('certificates')}
+          style={activeTab === 'certificates' ? styles.activeTab : styles.tab}
+        >
+          📄 My Certificates
+        </button>
+      </div>
+
+      {showQRScanner && activeTab === 'events' && (
         <QRScanner onScan={handleQRScan} />
       )}
 
-      {!selectedEvent ? (
+      {activeTab === 'certificates' ? (
+        <MyCertificates />
+      ) : !selectedEvent ? (
         <div>
           <h3>Available Events</h3>
           {events && events.length > 0 ? (
@@ -166,6 +186,8 @@ export default function User() {
                   <CertificateActions 
                     attendanceId={attendance.id} 
                     attendeeEmail={attendance.attendee?.email || ''} 
+                    attendeeName={attendance.attendee?.full_name || 'Attendee'}
+                    eventTitle={selectedEvent?.title || 'Event'}
                   />
                 </div>
               )}
@@ -185,6 +207,34 @@ const styles = {
     alignItems: 'center', 
     marginBottom: '20px',
     padding: '0 20px'
+  },
+  tabs: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '25px',
+    padding: '0 20px',
+    borderBottom: '2px solid #e8e8e8'
+  },
+  tab: {
+    padding: '12px 24px',
+    backgroundColor: 'transparent',
+    color: '#7f8c8d',
+    border: 'none',
+    borderBottom: '3px solid transparent',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.3s'
+  },
+  activeTab: {
+    padding: '12px 24px',
+    backgroundColor: 'transparent',
+    color: '#c8102e',
+    border: 'none',
+    borderBottom: '3px solid #c8102e',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600'
   },
   qrBtn: {
     padding: '10px 20px',

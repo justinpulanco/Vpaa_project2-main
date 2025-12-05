@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 
 const QuickStats = () => {
   const [stats, setStats] = useState(null);
@@ -10,7 +11,7 @@ const QuickStats = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/events/stats/');
+      const response = await fetch(`${API_BASE_URL}/api/events/stats/`);
       const data = await response.json();
       setStats(data);
     } catch (err) {

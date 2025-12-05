@@ -239,6 +239,37 @@ class EventViewSet(viewsets.ModelViewSet):
         events = events.order_by('-start')
         serializer = self.get_serializer(events, many=True)
         return Response(serializer.data)
+    
+    def get_queryset(self):
+        """Filter events based on user role and classification"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        # If not authenticated, only show PUBLIC events
+        if not user.is_authenticated:
+            return queryset.filter(classification='PUBLIC')
+        
+        # Get user profile
+        try:
+            profile = UserProfile.objects.get(user=user)
+            role = profile.role
+        except UserProfile.DoesNotExist:
+            return queryset.filter(classification='PUBLIC')
+        
+        # Admin can see all events
+        if role == 'ADMIN' or user.is_superuser:
+            return queryset
+        
+        # Faculty can see PUBLIC, STUDENTS, FACULTY
+        if role == 'PROF':
+            return queryset.filter(classification__in=['PUBLIC', 'STUDENTS', 'FACULTY'])
+        
+        # Students can see PUBLIC and STUDENTS
+        if role == 'STUDENT':
+            return queryset.filter(classification__in=['PUBLIC', 'STUDENTS'])
+        
+        # Default: only PUBLIC
+        return queryset.filter(classification='PUBLIC')
 
 
 class AttendeeViewSet(viewsets.ModelViewSet):
@@ -279,6 +310,82 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             })
         return Response({'detail': 'Event ID required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['post'])
+    def qr_toggle_attendance(self, request):
+        """
+        Smart QR code endpoint that automatically handles Time In/Time Out
+        - If user hasn't checked in: Time In
+        - If user checked in but not out: Time Out
+        - Returns current status
+        """
+        event_id = request.data.get('event_id')
+        attendee_email = request.data.get('email')
+        
+        if not event_id or not attendee_email:
+            return Response({'detail': 'Event ID and email required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response({'detail': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Find or create attendee
+        try:
+            attendee = Attendee.objects.get(email=attendee_email)
+        except Attendee.DoesNotExist:
+            return Response({
+                'action': 'register',
+                'detail': 'Please provide your details first',
+                'event': EventSerializer(event).data
+            }, status=status.HTTP_200_OK)
+        
+        # Check if attendance record exists
+        try:
+            attendance = Attendance.objects.get(event=event, attendee=attendee)
+            
+            # If already timed in but not timed out: TIME OUT
+            if attendance.present and not attendance.time_out:
+                attendance.time_out = timezone.now()
+                attendance.save()
+                
+                serializer = self.get_serializer(attendance)
+                return Response({
+                    'action': 'time_out',
+                    'detail': 'Time Out successful!',
+                    'attendance': serializer.data,
+                    'next_step': 'survey' if Survey.objects.filter(event=event, is_active=True).exists() else 'certificate'
+                }, status=status.HTTP_200_OK)
+            
+            # If already completed everything
+            elif attendance.time_out:
+                serializer = self.get_serializer(attendance)
+                return Response({
+                    'action': 'completed',
+                    'detail': 'You have already completed this event',
+                    'attendance': serializer.data
+                }, status=status.HTTP_200_OK)
+                
+        except Attendance.DoesNotExist:
+            # No attendance record: TIME IN
+            # Check capacity
+            if event.max_capacity > 0:
+                current_count = Attendance.objects.filter(event=event, present=True).count()
+                if current_count >= event.max_capacity:
+                    return Response({'detail': f'Event is full! Maximum capacity: {event.max_capacity}'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            attendance = Attendance.objects.create(
+                event=event,
+                attendee=attendee,
+                present=True
+            )
+            
+            serializer = self.get_serializer(attendance)
+            return Response({
+                'action': 'time_in',
+                'detail': 'Time In successful! Enjoy the event.',
+                'attendance': serializer.data
+            }, status=status.HTTP_201_CREATED)
+    
     @action(detail=False, methods=['post'])
     def time_in(self, request):
         event_id = request.data.get('event_id')
@@ -359,7 +466,9 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             'survey_completed': survey_done,
             'event_has_survey': event_has_surveys,
             'all_completed': all_tasks_completed,
-            'certificate_ready': bool(attendance.certificate and attendance.certificate.size > 1000) and all_tasks_completed
+            'certificate_ready': bool(attendance.certificate and attendance.certificate.size > 1000) and all_tasks_completed,
+            'certificate_reviewed': attendance.certificate_reviewed,
+            'certificate_approved': attendance.certificate_approved
         })
         
     @action(detail=True, methods=['post'])
@@ -408,6 +517,50 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             return response
         except Exception as e:
             return Response({'detail': f'Error opening certificate: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['post'])
+    def review_certificate(self, request, pk=None):
+        """Mark certificate as reviewed by user"""
+        attendance = self.get_object()
+        attendance.certificate_reviewed = True
+        attendance.save()
+        
+        serializer = self.get_serializer(attendance)
+        return Response({
+            'detail': 'Certificate marked as reviewed',
+            'attendance': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def approve_certificate(self, request, pk=None):
+        """User approves certificate and requests email delivery"""
+        attendance = self.get_object()
+        
+        if not attendance.certificate:
+            return Response({'detail': 'Certificate not generated yet'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        attendance.certificate_reviewed = True
+        attendance.certificate_approved = True
+        attendance.save()
+        
+        # Auto-send email after approval
+        return self.email_certificate(request, pk)
+    
+    @action(detail=True, methods=['post'])
+    def request_certificate_modification(self, request, pk=None):
+        """User requests modifications to certificate"""
+        attendance = self.get_object()
+        modifications = request.data.get('modifications', {})
+        
+        attendance.certificate_modifications = modifications
+        attendance.certificate_reviewed = True
+        attendance.certificate_approved = False
+        attendance.save()
+        
+        return Response({
+            'detail': 'Modification request submitted. Admin will review and regenerate certificate.',
+            'modifications': modifications
+        })
     
     @action(detail=True, methods=['post'])
     def email_certificate(self, request, pk=None):
@@ -469,6 +622,13 @@ class SurveyResponseViewSet(viewsets.ModelViewSet):
     queryset = SurveyResponse.objects.select_related('attendance', 'survey').all()
     serializer_class = SurveyResponseSerializer
     permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        survey_id = self.request.query_params.get('survey', None)
+        if survey_id:
+            queryset = queryset.filter(survey_id=survey_id)
+        return queryset
     
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)

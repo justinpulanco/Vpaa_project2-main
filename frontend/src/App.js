@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import AuthPage from "./components/AuthPage";
 import Admin from "./Admin";
 import User from "./User";
+import EventCheckIn from "./EventCheckIn";
+import QRAttendance from "./QRAttendance";
+import UserCertificateReview from "./UserCertificateReview";
+import API_BASE_URL from "./config";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -10,7 +14,6 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -30,7 +33,7 @@ function App() {
 
   const handleLogin = async (userData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login/', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,6 +134,11 @@ function App() {
           )
         }
       />
+
+      {/* Public routes for QR code check-in */}
+      <Route path="/event/:eventId/checkin" element={<EventCheckIn />} />
+      <Route path="/event/:eventId/qr" element={<QRAttendance />} />
+      <Route path="/user/attendance/:attendanceId" element={<UserCertificateReview />} />
 
       <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
     </Routes>

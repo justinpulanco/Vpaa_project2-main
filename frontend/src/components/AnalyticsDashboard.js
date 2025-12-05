@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 
 const AnalyticsDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
@@ -9,7 +10,7 @@ const AnalyticsDashboard = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/events/analytics/');
+      const response = await fetch(`${API_BASE_URL}/api/events/analytics/`);
       const data = await response.json();
       setAnalytics(data);
     } catch (err) {

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import API_BASE_URL from '../config';
 
-export default function SurveyBuilder({ eventId, onClose, onSuccess }) {
-  const [title, setTitle] = useState('');
-  const [questions, setQuestions] = useState([
-    { id: 1, text: '', type: 'text' }
-  ]);
+export default function SurveyBuilder({ eventId, surveyToEdit, onClose, onSuccess }) {
+  const [title, setTitle] = useState(surveyToEdit?.title || '');
+  const [questions, setQuestions] = useState(
+    surveyToEdit?.questions?.map((q, idx) => ({
+      id: q.id || idx + 1,
+      text: q.question || q.text || '',
+      type: q.type || 'text'
+    })) || [{ id: 1, text: '', type: 'text' }]
+  );
+  const isEditing = !!surveyToEdit;
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -41,8 +46,13 @@ export default function SurveyBuilder({ eventId, onClose, onSuccess }) {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/surveys/`, {
-        method: 'POST',
+      const url = isEditing 
+        ? `${API_BASE_URL}/api/surveys/${surveyToEdit.id}/`
+        : `${API_BASE_URL}/api/surveys/`;
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -51,11 +61,11 @@ export default function SurveyBuilder({ eventId, onClose, onSuccess }) {
       });
 
       if (response.ok) {
-        alert('✅ Survey created successfully!');
+        alert(isEditing ? '✅ Survey updated successfully!' : '✅ Survey created successfully!');
         onSuccess();
         onClose();
       } else {
-        alert('❌ Failed to create survey');
+        alert(isEditing ? '❌ Failed to update survey' : '❌ Failed to create survey');
       }
     } catch (err) {
       alert('❌ Error: ' + err.message);
@@ -66,7 +76,7 @@ export default function SurveyBuilder({ eventId, onClose, onSuccess }) {
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
-          <h2 style={styles.title}>📝 Create Survey</h2>
+          <h2 style={styles.title}>{isEditing ? '✏️ Edit Survey' : '📝 Create Survey'}</h2>
           <button onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
 

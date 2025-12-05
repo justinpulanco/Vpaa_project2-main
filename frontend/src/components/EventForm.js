@@ -10,7 +10,9 @@ const EventForm = ({ event, onSubmit, onCancel }) => {
     max_capacity: 0,
     certificate_template: 'default',
     recurrence: 'NONE',
-    recurrence_end_date: ''
+    recurrence_end_date: '',
+    semester: 'NONE',
+    academic_year: ''
   });
 
   useEffect(() => {
@@ -24,7 +26,9 @@ const EventForm = ({ event, onSubmit, onCancel }) => {
         max_capacity: event.max_capacity || 0,
         certificate_template: event.certificate_template || 'default',
         recurrence: event.recurrence || 'NONE',
-        recurrence_end_date: event.recurrence_end_date ? event.recurrence_end_date.slice(0, 16) : ''
+        recurrence_end_date: event.recurrence_end_date ? event.recurrence_end_date.slice(0, 16) : '',
+        semester: event.semester || 'NONE',
+        academic_year: event.academic_year || ''
       });
     }
   }, [event]);
@@ -105,6 +109,31 @@ const EventForm = ({ event, onSubmit, onCancel }) => {
               min="0"
               value={formData.max_capacity}
               onChange={(e) => setFormData({...formData, max_capacity: parseInt(e.target.value) || 0})}
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label>Semester</label>
+            <select
+              value={formData.semester}
+              onChange={(e) => setFormData({...formData, semester: e.target.value})}
+              style={styles.input}
+            >
+              <option value="NONE">Not Applicable</option>
+              <option value="1ST">1st Semester</option>
+              <option value="2ND">2nd Semester</option>
+              <option value="SUMMER">Summer</option>
+            </select>
+          </div>
+
+          <div style={styles.formGroup}>
+            <label>Academic Year (e.g., 2024-2025)</label>
+            <input
+              type="text"
+              value={formData.academic_year}
+              onChange={(e) => setFormData({...formData, academic_year: e.target.value})}
+              placeholder="2024-2025"
               style={styles.input}
             />
           </div>

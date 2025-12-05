@@ -192,6 +192,12 @@ body {
   background-color: #c0392b;
 }
 
+/* Spinner Animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .form-container {

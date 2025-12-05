@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import API_BASE_URL from '../config';
 
 const SurveyForm = ({ survey, attendanceId, onComplete }) => {
   const [answers, setAnswers] = useState({});
@@ -9,7 +10,7 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/survey-responses/', {
+      const response = await fetch(`${API_BASE_URL}/api/survey-responses/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -52,19 +53,32 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
           <div key={idx} style={styles.question}>
             <label style={styles.label}>
               <span style={styles.questionNumber}>Q{idx + 1}.</span> {q.question}
+              {q.required && <span style={styles.required}> *</span>}
             </label>
             {q.type === 'text' && (
               <input
                 type="text"
-                onChange={(e) => setAnswers({...answers, [idx]: e.target.value})}
-                required
+                onChange={(e) => setAnswers({...answers, [q.id || idx]: e.target.value})}
+                required={q.required}
                 style={styles.input}
               />
             )}
+            {q.type === 'multiple_choice' && (
+              <select
+                onChange={(e) => setAnswers({...answers, [q.id || idx]: e.target.value})}
+                required={q.required}
+                style={styles.select}
+              >
+                <option value="">Select an option</option>
+                {q.options && q.options.map((option, optIdx) => (
+                  <option key={optIdx} value={option}>{option}</option>
+                ))}
+              </select>
+            )}
             {q.type === 'rating' && (
               <select
-                onChange={(e) => setAnswers({...answers, [idx]: e.target.value})}
-                required
+                onChange={(e) => setAnswers({...answers, [q.id || idx]: e.target.value})}
+                required={q.required}
                 style={styles.select}
               >
                 <option value="">Select rating</option>
@@ -73,8 +87,8 @@ const SurveyForm = ({ survey, attendanceId, onComplete }) => {
             )}
             {q.type === 'yesno' && (
               <select
-                onChange={(e) => setAnswers({...answers, [idx]: e.target.value})}
-                required
+                onChange={(e) => setAnswers({...answers, [q.id || idx]: e.target.value})}
+                required={q.required}
                 style={styles.select}
               >
                 <option value="">Select answer</option>
@@ -139,6 +153,10 @@ const styles = {
     color: '#c8102e',
     fontWeight: '700',
     marginRight: '5px'
+  },
+  required: {
+    color: '#e74c3c',
+    fontWeight: '700'
   },
   input: { 
     padding: '12px', 

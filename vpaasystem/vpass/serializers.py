@@ -53,10 +53,12 @@ class AttendeeSerializer(serializers.ModelSerializer):
 
 class AttendanceSerializer(serializers.ModelSerializer):
     attendee = AttendeeSerializer()
+    event = EventSerializer(read_only=True)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'event', 'attendee', 'timestamp', 'present', 'certificate']
+        fields = ['id', 'event', 'attendee', 'timestamp', 'time_out', 'present', 'certificate', 
+                  'certificate_reviewed', 'certificate_approved', 'certificate_modifications']
         read_only_fields = ['certificate']
 
     def create(self, validated_data):

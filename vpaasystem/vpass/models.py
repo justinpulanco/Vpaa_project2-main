@@ -62,6 +62,21 @@ class Event(models.Model):
         ('MONTHLY', 'Monthly'),
     ]
     
+    CLASSIFICATION_CHOICES = [
+        ('PUBLIC', 'Public - Everyone can see'),
+        ('STUDENTS', 'Students Only'),
+        ('FACULTY', 'Faculty Only'),
+        ('ADMIN', 'Admin Only'),
+        ('RESTRICTED', 'Restricted - Invite Only'),
+    ]
+    
+    SEMESTER_CHOICES = [
+        ('1ST', '1st Semester'),
+        ('2ND', '2nd Semester'),
+        ('SUMMER', 'Summer'),
+        ('NONE', 'Not Applicable'),
+    ]
+    
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     start = models.DateTimeField()
@@ -77,6 +92,9 @@ class Event(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='OTHER')
     recurrence = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='NONE')
     recurrence_end_date = models.DateTimeField(null=True, blank=True)
+    classification = models.CharField(max_length=20, choices=CLASSIFICATION_CHOICES, default='PUBLIC')
+    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, default='NONE')
+    academic_year = models.CharField(max_length=20, blank=True, help_text="e.g., 2024-2025")
     
     class Meta:
         permissions = [
@@ -105,9 +123,24 @@ class Event(models.Model):
         import qrcode
         from io import BytesIO
         from django.core.files import File
+        import socket
         
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(f"Event ID: {self.id} - {self.title}")
+        
+        # Get local IP address for mobile access
+        try:
+            # Get the local IP address of the machine
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except:
+            local_ip = "localhost"
+        
+        # Generate URL that opens the check-in page (NOT the QR display page)
+        # Use local IP so phones on same network can access
+        event_url = f"http://{local_ip}:3000/event/{self.id}/checkin"
+        qr.add_data(event_url)
         qr.make(fit=True)
         
         img = qr.make_image(fill_color="black", back_color="white")
@@ -137,6 +170,9 @@ class Attendance(models.Model):
     time_out = models.DateTimeField(null=True, blank=True)
     present = models.BooleanField(default=False)
     certificate = models.FileField(upload_to='certificates/', null=True, blank=True)
+    certificate_reviewed = models.BooleanField(default=False)
+    certificate_approved = models.BooleanField(default=False)
+    certificate_modifications = models.JSONField(default=dict, blank=True)
 
     class Meta:
         unique_together = ('event', 'attendee')

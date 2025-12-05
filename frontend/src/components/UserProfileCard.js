@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 
 export default function UserProfileCard() {
   const [profile, setProfile] = useState(null);
@@ -11,7 +12,7 @@ export default function UserProfileCard() {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/profiles/me/', {
+      const response = await fetch(`${API_BASE_URL}/api/profiles/me/`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

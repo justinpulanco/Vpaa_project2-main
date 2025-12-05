@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../config';
 
 const TimeInOut = ({ event, onComplete }) => {
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ const TimeInOut = ({ event, onComplete }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/attendances/time_in/', {
+      const response = await fetch(`${API_BASE_URL}/api/attendances/time_in/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

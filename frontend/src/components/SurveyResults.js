@@ -8,6 +8,7 @@ export default function SurveyResults({ surveyId, onClose }) {
 
   useEffect(() => {
     fetchSurveyData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveyId]);
 
   const fetchSurveyData = async () => {

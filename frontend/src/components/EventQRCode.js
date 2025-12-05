@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config';
 
 export default function EventQRCode({ eventId }) {
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -6,15 +7,16 @@ export default function EventQRCode({ eventId }) {
 
   useEffect(() => {
     fetchQRCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   const fetchQRCode = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/events/${eventId}/qr_code/`);
+      const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/qr_code/`);
       const data = await response.json();
       
       if (data.qr_code_url) {
-        setQrCodeUrl(`http://localhost:8000${data.qr_code_url}`);
+        setQrCodeUrl(`${API_BASE_URL}${data.qr_code_url}`);
       }
     } catch (err) {
       console.error('Failed to fetch QR code:', err);

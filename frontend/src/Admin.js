@@ -5,6 +5,7 @@ import QuickStats from "./components/QuickStats";
 import CategoryFilter from "./components/CategoryFilter";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import EventDetailsModal from "./components/EventDetailsModal";
+import API_BASE_URL from './config';
 
 export default function Admin() {
   const [events, setEvents] = useState([]);
@@ -19,13 +20,14 @@ export default function Admin() {
 
   useEffect(() => {
     fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const fetchEvents = async () => {
     try {
       const url = filter === 'all' 
-        ? 'http://localhost:8000/api/events/'
-        : `http://localhost:8000/api/events/filter_by_status/?status=${filter}`;
+        ? `${API_BASE_URL}/api/events/`
+        : `${API_BASE_URL}/api/events/filter_by_status/?status=${filter}`;
       
       const response = await fetch(url);
       const data = await response.json();
@@ -42,8 +44,8 @@ export default function Admin() {
     try {
       const token = localStorage.getItem('token');
       const url = editingEvent 
-        ? `http://localhost:8000/api/events/${editingEvent.id}/`
-        : 'http://localhost:8000/api/events/';
+        ? `${API_BASE_URL}/api/events/${editingEvent.id}/`
+        : `${API_BASE_URL}/api/events/`;
       
       // Convert datetime-local to ISO format
       const eventData = {
@@ -87,7 +89,7 @@ export default function Admin() {
     
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/api/events/${id}/`, {
+      await fetch(`${API_BASE_URL}/api/events/${id}/`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

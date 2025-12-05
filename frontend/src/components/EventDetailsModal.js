@@ -12,6 +12,7 @@ export default function EventDetailsModal({ event, onClose }) {
   const [showSurveyBuilder, setShowSurveyBuilder] = useState(false);
   const [showSurveyResults, setShowSurveyResults] = useState(false);
   const [selectedSurveyId, setSelectedSurveyId] = useState(null);
+  const [surveyToEdit, setSurveyToEdit] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'attendees') {
@@ -19,6 +20,7 @@ export default function EventDetailsModal({ event, onClose }) {
     } else if (activeTab === 'surveys') {
       fetchSurveys();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, event.id]);
 
   const fetchAttendances = async () => {
@@ -176,15 +178,26 @@ export default function EventDetailsModal({ event, onClose }) {
                           {survey.is_active ? ' Active' : ' Inactive'}
                         </p>
                       </div>
-                      <button
-                        onClick={() => {
-                          setSelectedSurveyId(survey.id);
-                          setShowSurveyResults(true);
-                        }}
-                        style={styles.viewResultsBtn}
-                      >
-                        📊 View Results
-                      </button>
+                      <div style={styles.surveyActions}>
+                        <button
+                          onClick={() => {
+                            setSurveyToEdit(survey);
+                            setShowSurveyBuilder(true);
+                          }}
+                          style={styles.editBtn}
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedSurveyId(survey.id);
+                            setShowSurveyResults(true);
+                          }}
+                          style={styles.viewResultsBtn}
+                        >
+                          📊 View Results
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -244,10 +257,15 @@ export default function EventDetailsModal({ event, onClose }) {
       {showSurveyBuilder && (
         <SurveyBuilder
           eventId={event.id}
-          onClose={() => setShowSurveyBuilder(false)}
+          surveyToEdit={surveyToEdit}
+          onClose={() => {
+            setShowSurveyBuilder(false);
+            setSurveyToEdit(null);
+          }}
           onSuccess={() => {
             fetchSurveys();
             setShowSurveyBuilder(false);
+            setSurveyToEdit(null);
           }}
         />
       )}
@@ -466,6 +484,22 @@ const styles = {
     fontSize: '13px',
     color: '#7f8c8d'
   },
+  surveyActions: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center'
+  },
+  editBtn: {
+    padding: '10px 20px',
+    backgroundColor: '#f39c12',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s'
+  },
   viewResultsBtn: {
     padding: '10px 20px',
     backgroundColor: '#3498db',
@@ -474,6 +508,7 @@ const styles = {
     borderRadius: '6px',
     fontSize: '13px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'background-color 0.3s'
   },
 };

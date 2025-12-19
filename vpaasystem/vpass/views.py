@@ -9,12 +9,24 @@ from django.http import FileResponse
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Event, Attendee, Attendance, Survey, SurveyResponse, UserProfile
 from .serializers import EventSerializer, AttendeeSerializer, AttendanceSerializer, SurveySerializer, SurveyResponseSerializer, UserProfileSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 User = get_user_model()
 
 class RegisterView(APIView):
+    """
+    User Registration Endpoint
+    
+    Register a new user account with email verification.
+    """
     permission_classes = [permissions.AllowAny]
     
+    @extend_schema(
+        request=UserSerializer,
+        responses={201: UserSerializer},
+        description="Register a new user account"
+    )
     def post(self, request):
         import uuid
         from django.core.mail import send_mail
@@ -74,8 +86,31 @@ class VerifyEmailView(APIView):
             return Response({'detail': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
+    """
+    User Login Endpoint
+    
+    Authenticate user and return JWT tokens.
+    """
     permission_classes = [permissions.AllowAny]
     
+    @extend_schema(
+        request={
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'password': {'type': 'string'}
+            }
+        },
+        responses={200: {
+            'type': 'object',
+            'properties': {
+                'token': {'type': 'string'},
+                'refresh': {'type': 'string'},
+                'user': {'type': 'object'}
+            }
+        }},
+        description="Login with email and password"
+    )
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
@@ -113,6 +148,12 @@ class LoginView(APIView):
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class EventViewSet(viewsets.ModelViewSet):
+    """
+    Event Management ViewSet
+    
+    Provides CRUD operations for events including QR code generation,
+    attendance tracking, and analytics.
+    """
     queryset = Event.objects.all().order_by('-start')
     serializer_class = EventSerializer
     permission_classes = [permissions.AllowAny]
@@ -656,3 +697,5 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(profile)
             return Response(serializer.data)
         return Response({'detail': 'Not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+
+

@@ -102,6 +102,12 @@ class Event(models.Model):
             ('can_edit_event', 'Can edit event'),
             ('can_delete_event', 'Can delete event'),
         ]
+        indexes = [
+            models.Index(fields=['start', 'end']),
+            models.Index(fields=['created_by']),
+            models.Index(fields=['category']),
+            models.Index(fields=['classification']),
+        ]
 
     def __str__(self):
         return self.title
@@ -176,6 +182,11 @@ class Attendance(models.Model):
 
     class Meta:
         unique_together = ('event', 'attendee')
+        indexes = [
+            models.Index(fields=['event', 'attendee']),
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['present']),
+        ]
 
     def __str__(self):
         return f"{self.attendee} - {self.event} - {'Present' if self.present else 'Absent'}"

@@ -15,11 +15,21 @@ export default function MyCertificates() {
       const response = await fetch(`${API_BASE_URL}/api/attendances/?attendee__email=${user.email}`);
       const data = await response.json();
       
-      // Filter only those with certificates
-      const withCerts = data.filter(att => att.certificate && att.present);
-      setCertificates(withCerts);
+      // Handle paginated response (data.results) or plain array (data)
+      const attendances = data.results || data;
+      
+      // Check if attendances is an array
+      if (Array.isArray(attendances)) {
+        // Filter only those with certificates
+        const withCerts = attendances.filter(att => att.certificate && att.present);
+        setCertificates(withCerts);
+      } else {
+        console.error('Expected array but got:', typeof attendances);
+        setCertificates([]);
+      }
     } catch (err) {
       console.error('Failed to fetch certificates:', err);
+      setCertificates([]);
     } finally {
       setLoading(false);
     }

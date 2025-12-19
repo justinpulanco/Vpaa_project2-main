@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
-import ForgotPassword from './ForgotPassword';
 
 const AuthPage = () => {
   const [isSignIn, setIsSignIn] = useState(true);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -93,9 +92,7 @@ const AuthPage = () => {
     vpaaText: { margin: 0, color: 'white', fontSize: '42px', fontWeight: '700', textAlign: 'center', letterSpacing: '2px', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }
   };
 
-  if (showForgotPassword) {
-    return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
-  }
+
 
   return (
     <div style={styles.container}>
@@ -158,7 +155,7 @@ const AuthPage = () => {
               <div style={{ textAlign: 'right', marginTop: '5px' }}>
                 <button 
                   type="button"
-                  onClick={() => setShowForgotPassword(true)}
+                  onClick={() => alert('Please contact your administrator to reset your password.')}
                   style={{ background: 'none', border: 'none', color: '#3498db', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Forgot Password?

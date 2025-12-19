@@ -6,3 +6,4 @@ drf-spectacular
 Pillow
 reportlab
 qrcode[pil]
+python-decouple

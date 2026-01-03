@@ -171,7 +171,7 @@ const AuthPage = () => {
           {/* Sign Up Link */}
           {isSignIn && (
             <div style={styles.signUpPrompt}>
-              <span style={styles.signUpText}>You don't have any account? </span>
+              <span style={styles.signUpText}>You don't have an account? </span>
               <button 
                 type="button"
                 onClick={() => setIsSignIn(false)}
